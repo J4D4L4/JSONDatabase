@@ -3,13 +3,14 @@ package server;
 import java.util.HashMap;
 import java.util.List;
 
+
 public class DataSource {
 
     DataSource(){
         data =new HashMap<>();
     }
 
-    public HashMap<Integer,BusinessObject> getData() {
+    public HashMap<Integer, BusinessObject> getData() {
         return data;
     }
 

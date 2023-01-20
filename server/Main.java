@@ -7,9 +7,9 @@ import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
-        TextSingleDB dao = new TextSingleDB();
+       /* TextSingleDB dao = new TextSingleDB();
         while (true){
             String in[] = readInput();
             if(in != null) {
@@ -20,7 +20,11 @@ public class Main {
 
                 }
             }
-        }
+        }*/
+
+        SimpleServer server = new SimpleServer();
+        server.test();
+
     }
 
     public static String[] readInput(){
