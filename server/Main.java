@@ -1,6 +1,8 @@
 package server;
 
 
+import server.Commands.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -9,7 +11,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-       /* TextSingleDB dao = new TextSingleDB();
+       TextSingleDB dao = new TextSingleDB();
         while (true){
             String in[] = readInput();
             if(in != null) {
@@ -20,10 +22,10 @@ public class Main {
 
                 }
             }
-        }*/
+        }
 
-        SimpleServer server = new SimpleServer();
-        server.test();
+        //SimpleServer server = new SimpleServer();
+        //((server.test();
 
     }
 
@@ -72,21 +74,32 @@ public class Main {
     }
 
     static void interpretCommands(String in[], DataAccessObject dao){
+        Controller controller = new Controller();
+        BusinessObject bo = new SingleDB(-1,"");
+        Command command = new GetCommand(dao);
         try {
             switch (in[0]) {
                 case "set":
-                    BusinessObject bo = new SingleDB(Integer.parseInt(in[1]), in[2]);
-                    dao.add(bo);
+                     bo = new SingleDB(Integer.parseInt(in[1]), in[2]);
+                    command = new SetCommand(dao);
+
+                    //dao.set(boS);
                     break;
                 case "get":
-                    dao.get(Integer.parseInt(in[1]));
+                    bo = new SingleDB(Integer.parseInt(in[1]), "");
+                    command = new GetCommand(dao);
+                     //dao.get(boG);
                     break;
                 case "delete":
-                    dao.delete(Integer.parseInt(in[1]));
+                    bo = new SingleDB(Integer.parseInt(in[1]), "");
+                    command = new DeleteCommand(dao);
+                    //dao.delete(boD);
                     break;
                 default:
                     break;
             }
+            controller.setCommand(command);
+            controller.executeCommand(bo);
         }
         catch (NumberFormatException e){
             System.out.println("ERROR");
