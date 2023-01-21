@@ -7,5 +7,5 @@ import server.BusinessObject;
  */
 
 public interface Command {
-    void execute(BusinessObject i);
+    BusinessObject execute(BusinessObject i);
 }

@@ -10,7 +10,7 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-
+    /*
        TextSingleDB dao = new TextSingleDB();
         while (true){
             String in[] = readInput();
@@ -22,10 +22,11 @@ public class Main {
 
                 }
             }
-        }
+        }*/
 
-        //SimpleServer server = new SimpleServer();
-        //((server.test();
+        SimpleServer server = new SimpleServer();
+        server.run();
+
 
     }
 
@@ -41,7 +42,7 @@ public class Main {
             if (in.length < 1) {
                 System.out.println("ERROR");
                 returnStr = null;
-            } else if (!commands.contains(in[0]) || ((Integer.parseInt(in[1]) >100) || (Integer.parseInt(in[1])<0))) {
+            } else if (!commands.contains(in[0]) || ((Integer.parseInt(in[1]) >1000) || (Integer.parseInt(in[1])<0))) {
                 System.out.println("ERROR");
                 returnStr = null;
             }
@@ -104,6 +105,20 @@ public class Main {
         catch (NumberFormatException e){
             System.out.println("ERROR");
         }
+    }
+
+    public String[] interpretServerCommands(String s){
+
+        String[] in = s.split(" ");
+        String command = in[s.indexOf("-t")+1];
+        String index = in[s.indexOf("-i")+1];
+        String message = "";
+        for (int i = s.indexOf("-m")+1; i<s.length();i++){
+            message += in[i];
+        }
+        String returnStr[] = {command,index,message};
+        return returnStr;
+
     }
 
 

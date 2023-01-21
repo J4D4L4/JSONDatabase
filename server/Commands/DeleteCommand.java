@@ -11,8 +11,9 @@ public class DeleteCommand implements Command{
     }
 
     @Override
-    public void execute(BusinessObject i) {
+    public BusinessObject execute(BusinessObject i) {
         dao.delete(i);
 
+        return i;
     }
 }

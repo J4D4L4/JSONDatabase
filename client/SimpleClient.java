@@ -10,7 +10,7 @@ public class SimpleClient {
     DataInputStream din;
     DataOutputStream dout;
 
-    SimpleClient() throws IOException {
+    public SimpleClient() throws IOException {
         System.out.println("Client started!");
         s=new Socket(InetAddress.getByName(address),23456);
         din=new DataInputStream(s.getInputStream());
@@ -31,7 +31,7 @@ public class SimpleClient {
         try {
             out.writeUTF(msg);
             out.flush();
-            System.out.println("Send: "+msg);
+            System.out.println("Client Sent: "+msg);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -44,7 +44,7 @@ public class SimpleClient {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        System.out.println("Received: "+inStr);
+        System.out.println("Client Received: "+inStr);
         return inStr;
     }
 }

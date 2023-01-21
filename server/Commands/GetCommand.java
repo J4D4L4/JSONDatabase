@@ -10,7 +10,9 @@ public class GetCommand implements Command{
         this.dao =dao;
     }
     @Override
-    public void execute(BusinessObject i) {
-        dao.get(i);
+    public BusinessObject execute(BusinessObject i) {
+        //dao.get(i);
+        BusinessObject bo = dao.get(i);
+        return bo;
     }
 }
