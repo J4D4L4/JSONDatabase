@@ -1,5 +1,6 @@
 package server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +18,7 @@ public interface DataAccessObject {
 class TextSingleDB implements DataAccessObject{
 
 
-    TextSingleDB(){
+    TextSingleDB() throws IOException {
         ds = new DataSource();
         singleDBList = ds.getData();
     }
@@ -30,10 +31,11 @@ class TextSingleDB implements DataAccessObject{
     }
 
     @Override
-    public void update(BusinessObject bo) {
+    public synchronized void update(BusinessObject bo) {
         if (singleDBList.get(bo.getId()) !=null) {
             singleDBList.get(bo.getId()).setName(bo.getName());
             System.out.println("OK");
+            ds.updateFile();
         }
         else {
             System.out.println("Error");
@@ -41,9 +43,10 @@ class TextSingleDB implements DataAccessObject{
     }
 
     @Override
-    public boolean delete(BusinessObject i) {
+    public synchronized boolean delete(BusinessObject i) {
         if (singleDBList.get(i.getId()) !=null) {
             singleDBList.remove(i.getId());
+            ds.updateFile();
             return true;
         }
         else {
@@ -54,10 +57,11 @@ class TextSingleDB implements DataAccessObject{
     }
 
     @Override
-    public void set(BusinessObject bo) {
+    public synchronized void set(BusinessObject bo) {
         if (singleDBList.get(bo.getId()) ==null) {
             singleDBList.put(bo.getId(), bo);
             System.out.println("OK");
+            ds.updateFile();
         }
         else {
             singleDBList.put(bo.getId(), bo);
@@ -67,7 +71,7 @@ class TextSingleDB implements DataAccessObject{
     }
 
     @Override
-    public BusinessObject get(BusinessObject i) {
+    public synchronized BusinessObject get(BusinessObject i) {
         if (singleDBList.get(i.getId()) !=null) {
             //System.out.println(singleDBList.get(i.getId()).name);
             BusinessObject returnVal = singleDBList.get(i.getId());
@@ -75,7 +79,7 @@ class TextSingleDB implements DataAccessObject{
 
         }
         else {
-            System.out.println("Error");
+            //System.out.println("Error");
             //SimpleServer.sendMessage();
             return null;
         }

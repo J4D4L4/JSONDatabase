@@ -26,9 +26,6 @@ public class SimpleServer {
     public SimpleServer() throws IOException {
         ss = new ServerSocket(23456, 50, InetAddress.getByName(address));
         System.out.println("Server started!");
-        //s = ss.accept();
-        //din=new DataInputStream(s.getInputStream());
-        //dout=new DataOutputStream(s.getOutputStream());
 
     }
     public void test()throws Exception{
@@ -49,10 +46,6 @@ public class SimpleServer {
     public void run( ) throws Exception{
         TextSingleDB dao = new TextSingleDB();
         while (true) {
-
-
-
-
             s = ss.accept();
             din = new DataInputStream(s.getInputStream());
             dout = new DataOutputStream(s.getOutputStream());
@@ -78,7 +71,7 @@ public class SimpleServer {
     public static Request  readMsg(DataInputStream in){
         try {
             Request request = gson.fromJson(in.readUTF(),Request.class);
-            //System.out.println("Received: "+inStr);
+            System.out.println("Received: "+gson.toJson(request));
             return request;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -92,7 +85,7 @@ public class SimpleServer {
             String outMessage = gson.toJson(response);
             out.writeUTF(outMessage);
             out.flush();
-            //System.out.println("Server Sent: "+outMessage);
+            System.out.println("Sent:"+outMessage);
             s.close();
         } catch (IOException e) {
             throw new RuntimeException(e);

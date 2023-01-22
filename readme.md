@@ -18,3 +18,5 @@ usually accessed through the Internet.
 - Stage 4: In this stage, you will store the database in the JSON format. To work with JSON, we recommend to use GSON
   library made by Google. It is also included in our project setup. It is a good idea to get familiar with the library
   beforehand: see zetcode.com for some explanations!
+- Stage 5: In this stage, you will improve your client and server by adding the ability to work with files.
+The server should keep the database on the hard drive in the db.json file and update only after setting a new value or deleting one. You should store the JSON file in the /server/data folder.

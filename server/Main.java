@@ -10,19 +10,6 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-    /*
-       TextSingleDB dao = new TextSingleDB();
-        while (true){
-            String in[] = readInput();
-            if(in != null) {
-                if (in[0].equals("exit")) break;
-                else {
-
-                    interpretCommands(in, dao);
-
-                }
-            }
-        }*/
 
         SimpleServer server = new SimpleServer();
         server.run();

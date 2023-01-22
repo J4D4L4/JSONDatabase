@@ -1,10 +1,21 @@
 package client;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import server.BusinessObject;
 import server.Request;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SimpleClient extends Thread{
     String address = "127.0.0.1";
@@ -12,6 +23,9 @@ public class SimpleClient extends Thread{
     DataInputStream din;
     DataOutputStream dout;
     String message;
+    static List<Request> requests = new ArrayList<>();
+    static Gson gson = new Gson();
+    String filePath ="./src/client/data/";
 
     public SimpleClient(String msg) throws IOException  {
         System.out.println("Client started!");
@@ -24,30 +38,55 @@ public class SimpleClient extends Thread{
 
     }
 
+    public SimpleClient(String[] args) throws IOException  {
+        System.out.println("Client started!");
+        s=new Socket(InetAddress.getByName(address),23456);
+        din=new DataInputStream(s.getInputStream());
+        dout=new DataOutputStream(s.getOutputStream());
+
+        List<String> in = Arrays.asList(args);
+        if(in.indexOf("-in") != -1){
+            List<Request> dataRequest= readFile(in.get(in.indexOf("-in")+1));
+            for (Request r: dataRequest) {
+                requests.add(r);
+            }
+        }
+        else requests.add(createMsg(args));
+
+
+    }
+
     @Override
     public void run(){
-        sendMsg(message, dout);
-        try {
-            readMsg(din);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        for (Request r : requests){
+
+                sendMsg(r, dout);
+                try {
+                    readMsg(din);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
         }
+
+
     }
     public void test()throws Exception{
 
         //BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
 
         String str="",str2="";
-        sendMsg("Give me a record # 12", dout);
+        //sendMsg("Give me a record # 12", dout);
         str2=readMsg(din);
 
     }
 
-    public static void sendMsg(String msg, DataOutputStream out){
+    public static void sendMsg(Request msg, DataOutputStream out){
         try {
-            out.writeUTF(msg);
+            out.writeUTF(gson.toJson(msg));
             out.flush();
-            System.out.println("Client Sent: "+msg);
+            System.out.println("Sent:"+gson.toJson(msg));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -64,5 +103,43 @@ public class SimpleClient extends Thread{
         s.close();
         return inStr;
 
+    }
+
+    public List<Request> readFile(String path) throws FileNotFoundException {
+        List<Request> requests= new ArrayList<>();
+        File myObj = new File(filePath+path);
+        JsonReader reader = new JsonReader(new FileReader(myObj));
+        Type typeOfHashMap = new TypeToken<HashMap<String, BusinessObject>>() { }.getType();
+        requests.add(gson.fromJson(reader, Request.class));
+        return requests;
+    }
+
+    public static Request createMsg(String[] s){
+        List<String> in = Arrays.asList(s);
+        String index;
+        String value;
+        String type;
+        Request request = new Request(null,null);;
+        String outMsg;
+
+
+        if(in.indexOf("-t") != -1) {
+            type = in.get(in.indexOf("-t")+1);
+
+            if (in.indexOf("-k") != -1) {
+                index = in.get(in.indexOf("-k")+1);
+
+                if (in.indexOf("-v") != -1) {
+                    value = in.get(in.indexOf("-v")+1);
+                    request = new Request(type,index,value);
+                }
+                else request = new Request(type,index);
+            }
+            else request = new Request(type);
+        }
+
+
+
+        return request;
     }
 }
