@@ -5,7 +5,7 @@ import java.util.List;
 
 public abstract class BusinessObject {
     String name;
-    int id;
+    String id;
 
     public String getName() {
         return name;
@@ -15,15 +15,15 @@ public abstract class BusinessObject {
         this.name = name;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    BusinessObject(int id,String name){
+    BusinessObject(String id,String name){
         this.name = name;
         this.id = id;
     }

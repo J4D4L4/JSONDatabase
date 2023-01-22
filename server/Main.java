@@ -76,23 +76,23 @@ public class Main {
 
     static void interpretCommands(String in[], DataAccessObject dao){
         Controller controller = new Controller();
-        BusinessObject bo = new SingleDB(-1,"");
+        BusinessObject bo = new SingleDB("-1","");
         Command command = new GetCommand(dao);
         try {
             switch (in[0]) {
                 case "set":
-                     bo = new SingleDB(Integer.parseInt(in[1]), in[2]);
+                     bo = new SingleDB(in[1], in[2]);
                     command = new SetCommand(dao);
 
                     //dao.set(boS);
                     break;
                 case "get":
-                    bo = new SingleDB(Integer.parseInt(in[1]), "");
+                    bo = new SingleDB(in[1], "");
                     command = new GetCommand(dao);
                      //dao.get(boG);
                     break;
                 case "delete":
-                    bo = new SingleDB(Integer.parseInt(in[1]), "");
+                    bo = new SingleDB(in[1], "");
                     command = new DeleteCommand(dao);
                     //dao.delete(boD);
                     break;
@@ -100,7 +100,7 @@ public class Main {
                     break;
             }
             controller.setCommand(command);
-            controller.executeCommand(bo);
+            //BusinessObject returnObj = controller.executeCommand(bo);
         }
         catch (NumberFormatException e){
             System.out.println("ERROR");

@@ -10,13 +10,13 @@ public class DataSource {
         data =new HashMap<>();
     }
 
-    public HashMap<Integer, BusinessObject> getData() {
+    public HashMap<String, BusinessObject> getData() {
         return data;
     }
 
-    public void setData(HashMap<Integer, BusinessObject> data) {
+    public void setData(HashMap<String, BusinessObject> data) {
         this.data = data;
     }
 
-    HashMap<Integer, BusinessObject> data;
+    HashMap<String, BusinessObject> data;
 }

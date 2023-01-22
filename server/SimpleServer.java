@@ -1,5 +1,9 @@
 package server;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import server.Commands.*;
 
 import java.io.*;
@@ -17,6 +21,7 @@ public class SimpleServer {
     static Socket s;
     static DataInputStream din;
     static  DataOutputStream dout;
+    static Gson gson = new Gson();
 
     public SimpleServer() throws IOException {
         ss = new ServerSocket(23456, 50, InetAddress.getByName(address));
@@ -31,9 +36,9 @@ public class SimpleServer {
 
         String str="",str2="";
         //while(!str.equals("stop")){
-        str=readMsg(this.din);
+        //str=readMsg(this.din);
 
-        sendMessage(dout,"A record # "+str.split(" ")[str.split(" ").length-1] +" was sent!");
+        //sendMessage(dout,"A record # "+str.split(" ")[str.split(" ").length-1] +" was sent!");
         dout.flush();
         //}
         din.close();
@@ -47,55 +52,61 @@ public class SimpleServer {
 
 
 
+
             s = ss.accept();
             din = new DataInputStream(s.getInputStream());
             dout = new DataOutputStream(s.getOutputStream());
 
 
 
-            String str = readMsg(this.din);
+            Request str = readMsg(this.din);
             if(checkIfInputLeagel(str)){
-                String interpretedMessage[] = interpretServerCommands(str);
-                interpretCommands(interpretedMessage,dao);
+                //String interpretedMessage[] = interpretServerCommands(str);
+                interpretCommands(str,dao);
             }
             else {
-                sendMessage(dout, "Error");
-                System.out.println("Run: ERROR");
+                Response errorResponse = new Response("ERROR");
+                sendMessage(dout, errorResponse);
+                //System.out.println("Run: ERROR");
             }
+            s.close();
         }
 
 
     }
 
-    public static String  readMsg(DataInputStream in){
+    public static Request  readMsg(DataInputStream in){
         try {
-            String inStr = in.readUTF();
+            Request request = gson.fromJson(in.readUTF(),Request.class);
             //System.out.println("Received: "+inStr);
-            return inStr;
+            return request;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
     }
 
-    public static void sendMessage(DataOutputStream out, String message){
+    public static void sendMessage(DataOutputStream out,Response response){
         try {
-            out.writeUTF(message);
+            //Response response = new Response(responseType,message);
+            String outMessage = gson.toJson(response);
+            out.writeUTF(outMessage);
             out.flush();
-            System.out.println("Server Sent: "+message);
+            //System.out.println("Server Sent: "+outMessage);
+            s.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-    public String[] interpretServerCommands(String s){
+    /*public String[] interpretServerCommands(Request s){
 
-        List<String> in = new ArrayList<>();
-        in = Arrays.asList(s.split(" "));
+        //List<String> in = new ArrayList<>();
+        //in = Arrays.asList(s.split(" "));
 
-        String command = in.get(in.indexOf("-t")+1);
-        String index = in.get(in.indexOf("-i")+1);
+        String command = s.type;
+        String index = s.key;
         String message = "";
-        if(s.indexOf("-m") != -1) {
+        if(s.value != null) {
             for (int i = in.indexOf("-m") + 1; i < in.size(); i++) {
                 message += " "+in.get(i);
             }
@@ -104,77 +115,89 @@ public class SimpleServer {
         String returnStr[] = {command,index,message};
         return returnStr;
 
-    }
+    }*/
 
-    static void interpretCommands(String in[], DataAccessObject dao){
+    static void interpretCommands(Request in, DataAccessObject dao){
         Controller controller = new Controller();
-        BusinessObject bo = new SingleDB(-1,"");
+        BusinessObject bo = new SingleDB("-1","");
         Command command = new GetCommand(dao);
+        Response okResponse = new Response("OK");
+        Response errorResponse = new Response("error");
         try {
-            switch (in[0]) {
+            switch (in.type) {
                 case "set":
-                    bo = new SingleDB(Integer.parseInt(in[1]), in[2]);
-                    command = new SetCommand(dao);
-                    sendMessage(dout, "OK");
+                    try {
+                        bo = new SingleDB(in.key, in.value);
+                        command = new SetCommand(dao);
+                        sendMessage(dout, okResponse);
+                    }
+                    catch (NumberFormatException e){
+                        sendMessage(dout, new ErrorResponse("ERROR","No such key"));
+                    }
+
                     //dao.set(boS);
                     break;
                 case "get":
-                    bo = new SingleDB(Integer.parseInt(in[1]), "");
+                    bo = new SingleDB(in.key, "");
                     command = new GetCommand(dao);
-
-                    controller.setCommand(command);
                     BusinessObject ba = command.execute(bo);
                     if(ba == null){
-                        sendMessage(dout, "ERROR");
+                        sendMessage(dout, new ErrorResponse("ERROR","No such key"));
                     }
-                    else sendMessage(dout, ba.getName());
+
+                    else{
+                        Response itemResponse = new GoodResponse("OK", ba.getName());
+                    sendMessage(dout, itemResponse);
+                }
                     //dao.get(boG);
                     break;
                 case "delete":
-                    bo = new SingleDB(Integer.parseInt(in[1]), "");
+                    bo = new SingleDB(in.key, "");
                     command = new DeleteCommand(dao);
-                    sendMessage(dout, "OK");
+
+                    BusinessObject bD = command.execute(bo);
+                    if(bD == null) sendMessage(dout, new ErrorResponse("ERROR","No such key"));
+                    else sendMessage(dout, okResponse);
                     //dao.delete(boD);
                     break;
                 case "exit":
-                    bo = new SingleDB(0, "");
-                    sendMessage(dout, "OK");
+                    bo = new SingleDB("0", "");
+                    sendMessage(dout, okResponse);
                     command = new ExitCommand(dao);
                     closeServer();
                     //dao.delete(boD);
                     break;
                 default:
                     break;
+
             }
             controller.setCommand(command);
             controller.executeCommand(bo);
         }
         catch (NumberFormatException e){
-            sendMessage(dout, "Error");
+            sendMessage(dout, new ErrorResponse("ERROR","Wrong Format"));
+            System.out.println("Interpret: ERROR");
+        }
+        catch (JsonParseException e){
+            sendMessage(dout, new ErrorResponse("ERROR","Wrong Format"));
             System.out.println("Interpret: ERROR");
         }
     }
 
-    public static boolean checkIfInputLeagel(String s){
+    public static boolean checkIfInputLeagel(Request s){
         boolean isLeagal = true;
-        List<String> input = new ArrayList<>();
-        input = Arrays.asList(s.split(" "));
+
+        //List<String> input = new ArrayList<>();
+        //input = Arrays.asList(s.split(" "));
         // check if correct min length and if commands are present
-        if((s.length()<1 || (input.indexOf("-t") == -1))){
+        if(((s.type == null))){
             isLeagal = false;
         }
         // check if commands are followed by input
-        if (input.get(input.indexOf("-t")+1).equals("-i") || input.get(input.indexOf("-i")+1).equals("-m")){
+        if(!getCommands().contains(s.type)){
             isLeagal = false;
         }
 
-        if(!getCommands().contains(input.get(input.indexOf("-t")+1))){
-            isLeagal = false;
-        }
-        if(input.size()>2){
-            if(Integer.parseInt(input.get(3))>1000 || Integer.parseInt(input.get(3))<0)
-                isLeagal = false;
-        }
         return isLeagal;
     }
 

@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public interface DataAccessObject {
-    HashMap<Integer, BusinessObject> getAll();
+    HashMap<String, BusinessObject> getAll();
     void update(BusinessObject bo);
-    void delete(BusinessObject i);
+    boolean delete(BusinessObject i);
     void set(BusinessObject bo);
     BusinessObject get(BusinessObject i);
     void setData();
@@ -22,10 +22,10 @@ class TextSingleDB implements DataAccessObject{
         singleDBList = ds.getData();
     }
 
-    HashMap<Integer,BusinessObject> singleDBList;
+    HashMap<String,BusinessObject> singleDBList;
     DataSource ds;
     @Override
-    public HashMap<Integer,BusinessObject> getAll() {
+    public HashMap<String,BusinessObject> getAll() {
         return singleDBList;
     }
 
@@ -41,13 +41,13 @@ class TextSingleDB implements DataAccessObject{
     }
 
     @Override
-    public void delete(BusinessObject i) {
+    public boolean delete(BusinessObject i) {
         if (singleDBList.get(i.getId()) !=null) {
             singleDBList.remove(i.getId());
-            System.out.println("OK");
+            return true;
         }
         else {
-            System.out.println("OK");
+            return false;
         }
 
 
