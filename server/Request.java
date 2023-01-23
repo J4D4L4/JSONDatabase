@@ -1,17 +1,20 @@
 package server;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 public class Request {
 
-    String type;
-    String key;
-    String value;
+    public String type;
+    public JsonElement key;
+    public JsonElement value;
 
-    public Request(String type, String key){
+    public Request(String type, JsonElement key){
         this.type = type;
         this.key = key;
     }
 
-    public Request(String type, String key, String value){
+    public Request(String type, JsonElement key, JsonElement value){
         this.type = type;
         this.key = key;
         this.value = value;

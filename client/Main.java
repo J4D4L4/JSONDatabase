@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class Main {
-
+    static Gson gson = new Gson();
     public static void main(String[] args) throws Exception {
 
         SimpleClient client = new SimpleClient(args);
@@ -47,9 +47,9 @@ public class Main {
 
                 if (in.indexOf("-v") != -1) {
                     value = in.get(in.indexOf("-v")+1);
-                    request = new Request(type,index,value);
+                    request = new Request(type,gson.toJsonTree(index),gson.toJsonTree(value));
                 }
-                else request = new Request(type,index);
+                else request = new Request(type,gson.toJsonTree(index));
             }
             else request = new Request(type);
         }

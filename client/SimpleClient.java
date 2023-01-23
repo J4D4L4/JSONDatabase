@@ -1,19 +1,19 @@
 package client;
 
 import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import server.BusinessObject;
+import server.Person;
 import server.Request;
+import server.SingleDB;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -105,14 +105,44 @@ public class SimpleClient extends Thread{
 
     }
 
-    public List<Request> readFile(String path) throws FileNotFoundException {
+    public List<Request> readFile(String path) throws IOException {
         List<Request> requests= new ArrayList<>();
         File myObj = new File(filePath+path);
         JsonReader reader = new JsonReader(new FileReader(myObj));
         Type typeOfHashMap = new TypeToken<HashMap<String, BusinessObject>>() { }.getType();
-        requests.add(gson.fromJson(reader, Request.class));
+        Map<String, String> map = gson.fromJson(reader,Map.class);
+        reader.close();
+        Request request = new Request("", gson.toJsonTree(""),gson.toJsonTree(""));
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            String key = entry.getKey();
+
+            if(key.equals("type")) {
+                request.type = entry.getValue();
+            }
+            if(key.equals("key")) {
+                String jsonValueKey = gson.toJson(entry.getValue());
+                if(!(gson.fromJson(jsonValueKey,Object.class).getClass() == ArrayList.class)) {
+                    request.key = gson.toJsonTree(entry.getValue());
+                }
+                else request.key = gson.toJsonTree(entry.getValue());
+            }
+            if(key.equals("value")) {
+                String jsonValue = gson.toJson(entry.getValue());
+                if(!(gson.fromJson(jsonValue,Object.class).getClass() == LinkedTreeMap.class)) {
+                    Person person = gson.fromJson(jsonValue, Person.class);
+                    request.value =  gson.toJsonTree(person);
+                }
+                else request.value = gson.toJsonTree(entry.getValue());
+
+            }
+
+            //data.put(entry.getKey(),bo);
+            //data.put(entry.getKey(), value);
+        }
+        requests.add(request);
         return requests;
     }
+
 
     public static Request createMsg(String[] s){
         List<String> in = Arrays.asList(s);
@@ -131,9 +161,9 @@ public class SimpleClient extends Thread{
 
                 if (in.indexOf("-v") != -1) {
                     value = in.get(in.indexOf("-v")+1);
-                    request = new Request(type,index,value);
+                    request = new Request(type, gson.toJsonTree(index),gson.toJsonTree(value));
                 }
-                else request = new Request(type,index);
+                else request = new Request(type,gson.toJsonTree(index));
             }
             else request = new Request(type);
         }

@@ -5,7 +5,7 @@ import java.util.List;
 
 public abstract class BusinessObject {
     String name;
-    String id;
+    String key;
 
     public String getName() {
         return name;
@@ -16,16 +16,16 @@ public abstract class BusinessObject {
     }
 
     public String getId() {
-        return id;
+        return key;
     }
 
     public void setId(String id) {
-        this.id = id;
+        this.key = id;
     }
 
     BusinessObject(String id,String name){
         this.name = name;
-        this.id = id;
+        this.key = id;
     }
 
 

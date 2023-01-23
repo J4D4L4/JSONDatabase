@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.internal.LinkedTreeMap;
 import server.Commands.*;
 
 import java.io.*;
@@ -14,6 +15,10 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class SimpleServer {
     String address = "127.0.0.1";;
@@ -51,35 +56,70 @@ public class SimpleServer {
             dout = new DataOutputStream(s.getOutputStream());
 
 
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.submit(()->{
+                Request str = readMsg(this.din);
+                System.out.println(str);
+                if(checkIfInputLeagel(str)){
+                    //String interpretedMessage[] = interpretServerCommands(str);
+                    interpretCommands(str,dao);
+                }
+                else {
+                    Response errorResponse = new Response("ERROR");
+                    sendMessage(dout, errorResponse);
+                    //System.out.println("Run: ERROR");
+                }
+                try {
+                    s.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            executor.shutdown();
 
-            Request str = readMsg(this.din);
-            if(checkIfInputLeagel(str)){
-                //String interpretedMessage[] = interpretServerCommands(str);
-                interpretCommands(str,dao);
-            }
-            else {
-                Response errorResponse = new Response("ERROR");
-                sendMessage(dout, errorResponse);
-                //System.out.println("Run: ERROR");
-            }
-            s.close();
+            boolean terminated = executor.awaitTermination(60, TimeUnit.MILLISECONDS);
         }
 
 
     }
 
-    public static Request  readMsg(DataInputStream in){
+    public static Request  readMsg(DataInputStream in) {
         try {
-            Request request = gson.fromJson(in.readUTF(),Request.class);
-            System.out.println("Received: "+gson.toJson(request));
+            //Request request = gson.fromJson(in.readUTF(),Request.class);
+            Map<String, String> map = gson.fromJson(in.readUTF(), Map.class);
+
+            Request request = new Request("", gson.toJsonTree(""), gson.toJsonTree(""));
+            for (Map.Entry<String, String> entry : map.entrySet()) {
+                String key = entry.getKey();
+
+                if (key.equals("type")) {
+                    request.type = entry.getValue();
+                }
+                if (key.equals("key")) {
+                    request.key = gson.toJsonTree(entry.getValue());
+
+                }
+                if (key.equals("value")) {
+
+                    JsonElement jsonValue = gson.toJsonTree(entry.getValue());
+                    if((jsonValue.isJsonObject() )) {
+                        Person person = gson.fromJson(jsonValue, Person.class);
+                        request.value = gson.toJsonTree(person);
+                    }
+                    else request.value = gson.toJsonTree(entry.getValue());
+                }
+            }
+
+            System.out.println("Received: " + gson.toJson(request));
             return request;
+
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
-    public static void sendMessage(DataOutputStream out,Response response){
+        public static void sendMessage(DataOutputStream out,Response response){
         try {
             //Response response = new Response(responseType,message);
             String outMessage = gson.toJson(response);
@@ -120,7 +160,14 @@ public class SimpleServer {
             switch (in.type) {
                 case "set":
                     try {
-                        bo = new SingleDB(in.key, in.value);
+                        JsonElement jsonIN = in.value;
+
+
+                        if(!(gson.fromJson(jsonIN,Object.class).getClass() == LinkedTreeMap.class)) {
+                            bo = new SingleDB(gson.fromJson(in.key,String.class), gson.fromJson(in.value, String.class));
+                        }//Tested for json element
+                        else bo = gson.fromJson(in.value, Person.class);
+                        bo.key = (gson.fromJson(in.key,String.class));
                         command = new SetCommand(dao);
                         sendMessage(dout, okResponse);
                     }
@@ -131,21 +178,38 @@ public class SimpleServer {
                     //dao.set(boS);
                     break;
                 case "get":
-                    bo = new SingleDB(in.key, "");
+                    List<String> getElements = new ArrayList<>();
+                    Response itemResponse;
+                    BusinessObject ba;
+                    if((gson.fromJson(in.key,Object.class).getClass() == ArrayList.class)) {
+                        for(JsonElement json: in.key.getAsJsonArray()){
+                            getElements.add(gson.fromJson(json,String.class));
+                        }
+                        bo = new Person(getElements.get(0),"");
+                        ba = dao.getPerson(bo);
+
+                    }
+                    else {
+                        bo = new SingleDB(gson.fromJson(in.key, String.class), "");
+                        ba = command.execute(bo);
+                    }
                     command = new GetCommand(dao);
-                    BusinessObject ba = command.execute(bo);
+                    //
+
                     if(ba == null){
                         sendMessage(dout, new ErrorResponse("ERROR","No such key"));
-                    }
+                    } else if (ba instanceof Person) {
+                        String personJson = gson.toJson(ba);
+                        itemResponse = new GoodResponse("OK", gson.fromJson(personJson, JsonObject.class).get(getElements.get(1)).getAsString());
 
-                    else{
-                        Response itemResponse = new GoodResponse("OK", ba.getName());
+                    } else{
+                        itemResponse = new GoodResponse("OK", ba.getName());
                     sendMessage(dout, itemResponse);
                 }
                     //dao.get(boG);
                     break;
                 case "delete":
-                    bo = new SingleDB(in.key, "");
+                    bo = new SingleDB(gson.fromJson(in.key,String.class), "");
                     command = new DeleteCommand(dao);
 
                     BusinessObject bD = command.execute(bo);
@@ -211,4 +275,6 @@ public class SimpleServer {
             throw new RuntimeException(e);
         }
     }
+
+
 }

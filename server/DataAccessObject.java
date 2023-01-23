@@ -1,5 +1,7 @@
 package server;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,7 +14,9 @@ public interface DataAccessObject {
     void set(BusinessObject bo);
     BusinessObject get(BusinessObject i);
     void setData();
+    public DataSource ds = null;
 
+    Person getPerson(BusinessObject bo);
 }
 
 class TextSingleDB implements DataAccessObject{
@@ -24,7 +28,7 @@ class TextSingleDB implements DataAccessObject{
     }
 
     HashMap<String,BusinessObject> singleDBList;
-    DataSource ds;
+    public DataSource ds;
     @Override
     public HashMap<String,BusinessObject> getAll() {
         return singleDBList;
@@ -83,6 +87,12 @@ class TextSingleDB implements DataAccessObject{
             //SimpleServer.sendMessage();
             return null;
         }
+    }
+
+    public Person getPerson(BusinessObject bo){
+        Gson gson = new Gson();
+        Person returnVal = gson.fromJson(gson.toJson(singleDBList.get(bo.getId())), Person.class);
+        return returnVal;
     }
 
     @Override
