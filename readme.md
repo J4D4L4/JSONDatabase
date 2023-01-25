@@ -20,3 +20,4 @@ usually accessed through the Internet.
   beforehand: see zetcode.com for some explanations!
 - Stage 5: In this stage, you will improve your client and server by adding the ability to work with files.
 The server should keep the database on the hard drive in the db.json file and update only after setting a new value or deleting one. You should store the JSON file in the /server/data folder.
+- Stage 6: In this stage, you will improve your database. It should be able to store not only strings, but any JSON objects as values.

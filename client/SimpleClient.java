@@ -112,7 +112,7 @@ public class SimpleClient extends Thread{
         Type typeOfHashMap = new TypeToken<HashMap<String, BusinessObject>>() { }.getType();
         Map<String, String> map = gson.fromJson(reader,Map.class);
         reader.close();
-        Request request = new Request("", gson.toJsonTree(""),gson.toJsonTree(""));
+        Request request = new Request("", gson.toJsonTree(""));
         for (Map.Entry<String, String> entry : map.entrySet()) {
             String key = entry.getKey();
 
@@ -128,7 +128,9 @@ public class SimpleClient extends Thread{
             }
             if(key.equals("value")) {
                 String jsonValue = gson.toJson(entry.getValue());
-                if(!(gson.fromJson(jsonValue,Object.class).getClass() == LinkedTreeMap.class)) {
+                if(jsonValue.indexOf("{") == -1)
+                    request.value = gson.toJsonTree(entry.getValue());
+                else if(!(gson.fromJson(jsonValue,Object.class).getClass() == LinkedTreeMap.class)) {
                     Person person = gson.fromJson(jsonValue, Person.class);
                     request.value =  gson.toJsonTree(person);
                 }

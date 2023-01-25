@@ -1,12 +1,16 @@
 package server;
 
+
+import com.google.gson.JsonElement;
+
 public class ErrorResponse extends Response {
 
-    ErrorResponse(String response, String reason) {
+
+    ErrorResponse(JsonElement response, JsonElement reason) {
         super(response);
         this.reason = reason;
     }
 
     //String value;
-    String reason;
+    JsonElement reason;
 }

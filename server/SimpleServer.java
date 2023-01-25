@@ -1,9 +1,6 @@
 package server;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
+import com.google.gson.*;
 import com.google.gson.internal.LinkedTreeMap;
 import server.Commands.*;
 
@@ -27,6 +24,7 @@ public class SimpleServer {
     static DataInputStream din;
     static  DataOutputStream dout;
     static Gson gson = new Gson();
+    static Gson gResponseGson = new GsonBuilder().registerTypeAdapter(GoodResponse.class, new GoodResponseSerializerJson()).create();
 
     public SimpleServer() throws IOException {
         ss = new ServerSocket(23456, 50, InetAddress.getByName(address));
@@ -65,7 +63,7 @@ public class SimpleServer {
                     interpretCommands(str,dao);
                 }
                 else {
-                    Response errorResponse = new Response("ERROR");
+                    Response errorResponse = new Response(gson.toJsonTree("ERROR"));
                     sendMessage(dout, errorResponse);
                     //System.out.println("Run: ERROR");
                 }
@@ -88,7 +86,7 @@ public class SimpleServer {
             //Request request = gson.fromJson(in.readUTF(),Request.class);
             Map<String, String> map = gson.fromJson(in.readUTF(), Map.class);
 
-            Request request = new Request("", gson.toJsonTree(""), gson.toJsonTree(""));
+            Request request = new Request("", gson.toJsonTree(""));
             for (Map.Entry<String, String> entry : map.entrySet()) {
                 String key = entry.getKey();
 
@@ -122,7 +120,7 @@ public class SimpleServer {
         public static void sendMessage(DataOutputStream out,Response response){
         try {
             //Response response = new Response(responseType,message);
-            String outMessage = gson.toJson(response);
+            String outMessage = gResponseGson.toJson(response);
             out.writeUTF(outMessage);
             out.flush();
             System.out.println("Sent:"+outMessage);
@@ -154,25 +152,37 @@ public class SimpleServer {
         Controller controller = new Controller();
         BusinessObject bo = new SingleDB("-1","");
         Command command = new GetCommand(dao);
-        Response okResponse = new Response("OK");
-        Response errorResponse = new Response("error");
+        Response okResponse = new Response(gson.toJsonTree("OK"));
+        Response errorResponse = new Response(gson.toJsonTree("error"));
         try {
             switch (in.type) {
                 case "set":
                     try {
                         JsonElement jsonIN = in.value;
+                        if(in.key.isJsonArray()==true){
+                            Person getPo = new Person(gson.fromJson(in.key.getAsJsonArray().get(0),String.class),"");
+                            Person po = dao.getPerson(getPo);
+                            po = setValueOfKeyJson(po, gson.fromJson(in.key.getAsJsonArray(),String[].class), gson.fromJson(in.value,String.class));
+                           dao.setPerson(po);
+                        }
 
-
-                        if(!(gson.fromJson(jsonIN,Object.class).getClass() == LinkedTreeMap.class)) {
+                        else if(!(gson.fromJson(jsonIN,Object.class).getClass() == LinkedTreeMap.class)) {
                             bo = new SingleDB(gson.fromJson(in.key,String.class), gson.fromJson(in.value, String.class));
+                            bo.key = (gson.fromJson(in.key,String.class));
+                            command = new SetCommand(dao);
                         }//Tested for json element
-                        else bo = gson.fromJson(in.value, Person.class);
-                        bo.key = (gson.fromJson(in.key,String.class));
-                        command = new SetCommand(dao);
+                        else {
+                            Person businessPerson = gson.fromJson(in.value, Person.class);
+                            businessPerson.key = (gson.fromJson(in.key,String.class));
+                            dao.setPerson(businessPerson);
+                        }
+
+
+
                         sendMessage(dout, okResponse);
                     }
                     catch (NumberFormatException e){
-                        sendMessage(dout, new ErrorResponse("ERROR","No such key"));
+                        sendMessage(dout, new ErrorResponse(gson.toJsonTree( "ERROR"), gson.toJsonTree("No such key")));
                     }
 
                     //dao.set(boS);
@@ -187,6 +197,12 @@ public class SimpleServer {
                         }
                         bo = new Person(getElements.get(0),"");
                         ba = dao.getPerson(bo);
+                        if(getElements.size()>1) {
+                            String valueOfKey = getValueOfKeyJson(gson.toJsonTree(ba), getElements.get(1));
+                            itemResponse = new GoodResponse(gson.toJsonTree("OK"), gson.toJsonTree(valueOfKey));
+                        }
+                        else itemResponse = new GoodResponse(gson.toJsonTree("OK"), gson.toJsonTree(ba));
+                        sendMessage(dout, itemResponse);
 
                     }
                     else {
@@ -197,24 +213,46 @@ public class SimpleServer {
                     //
 
                     if(ba == null){
-                        sendMessage(dout, new ErrorResponse("ERROR","No such key"));
+                        sendMessage(dout, new ErrorResponse(gson.toJsonTree( "ERROR"), gson.toJsonTree("No such key")));
                     } else if (ba instanceof Person) {
                         String personJson = gson.toJson(ba);
-                        itemResponse = new GoodResponse("OK", gson.fromJson(personJson, JsonObject.class).get(getElements.get(1)).getAsString());
+                        itemResponse = new GoodResponse(gson.toJsonTree( "OK"), gson.toJsonTree(gson.fromJson(personJson, JsonObject.class).get(getElements.get(1)).getAsString()));
 
                     } else{
-                        itemResponse = new GoodResponse("OK", ba.getName());
+                        itemResponse = new GoodResponse(gson.toJsonTree( "OK"), gson.toJsonTree(ba.getName()));
                     sendMessage(dout, itemResponse);
                 }
                     //dao.get(boG);
                     break;
                 case "delete":
-                    bo = new SingleDB(gson.fromJson(in.key,String.class), "");
-                    command = new DeleteCommand(dao);
 
-                    BusinessObject bD = command.execute(bo);
-                    if(bD == null) sendMessage(dout, new ErrorResponse("ERROR","No such key"));
-                    else sendMessage(dout, okResponse);
+                    JsonElement jsonIN = in.value;
+
+                    if(in.key.isJsonArray()==true){
+                        Person getPo = new Person(gson.fromJson(in.key.getAsJsonArray().get(0),String.class),"");
+                        Person po = dao.getPerson(getPo);
+                        po = deleteValueOfKeyJson(po, gson.fromJson(in.key.getAsJsonArray(),String[].class));
+                        dao.setPerson(po);
+                        sendMessage(dout, okResponse);
+                    }
+
+
+                    else if(!(gson.fromJson(jsonIN,Object.class).getClass() == LinkedTreeMap.class)) {
+                        Person po = new Person(gson.fromJson(in.key,String.class),"");
+                        dao.deletePerson(po);
+                        sendMessage(dout, okResponse);
+                    }
+                    else {
+                        bo = new SingleDB(gson.fromJson(in.key, String.class), "");
+
+                        command = new DeleteCommand(dao);
+
+                        BusinessObject bD = command.execute(bo);
+                        if(bD == null) sendMessage(dout, new ErrorResponse(gson.toJsonTree( "ERROR"), gson.toJsonTree("No such key")));
+                        else sendMessage(dout, okResponse);
+                    }
+
+
                     //dao.delete(boD);
                     break;
                 case "exit":
@@ -232,11 +270,11 @@ public class SimpleServer {
             controller.executeCommand(bo);
         }
         catch (NumberFormatException e){
-            sendMessage(dout, new ErrorResponse("ERROR","Wrong Format"));
+            sendMessage(dout, new ErrorResponse(gson.toJsonTree( "ERROR"), gson.toJsonTree("Wrong Format")));
             System.out.println("Interpret: ERROR");
         }
         catch (JsonParseException e){
-            sendMessage(dout, new ErrorResponse("ERROR","Wrong Format"));
+            sendMessage(dout, new ErrorResponse(gson.toJsonTree( "ERROR"), gson.toJsonTree("Wrong Format")));
             System.out.println("Interpret: ERROR");
         }
     }
@@ -276,5 +314,56 @@ public class SimpleServer {
         }
     }
 
+    public static String getValueOfKeyJson(JsonElement jsonElement, String key){
+        JsonElement keyValue = jsonElement.getAsJsonObject().get(key);
+        String returnVal = gson.fromJson(keyValue, String.class);
+        return returnVal;
+
+    }
+
+    public static Person setValueOfKeyJson(Person person, String key[], String setVal){
+
+        if(key[1].equals("car")){
+            if(key[2].equals("model")){
+                person.car.model = setVal;
+            }
+            if(key[2].equals("year")){
+                person.car.model = setVal;
+            }
+        }
+
+        if(key[1].equals("rocket")){
+            if(key[2].equals("name")){
+                person.rocket.name = setVal;
+            }
+            if(key[2].equals("launches")){
+                person.rocket.launches = setVal;
+            }
+        }
+    return person;
+
+    }
+    public static Person deleteValueOfKeyJson(Person person, String key[]){
+        List<String> keyList = Arrays.asList(key);
+        if(keyList.contains("car")){
+            if(keyList.contains("model")){
+                person.car.model = null;
+            }
+            if(keyList.contains("year")){
+                person.car.year = null;
+            }
+        }
+
+        if(keyList.contains("rocket")){
+            if(keyList.contains("name")){
+                person.rocket.name = null;
+            }
+            if(keyList.contains("launches")){
+                person.rocket.launches = null;
+            }
+        }
+        return person;
+
+    }
 
 }

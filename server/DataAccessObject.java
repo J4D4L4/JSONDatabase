@@ -17,6 +17,8 @@ public interface DataAccessObject {
     public DataSource ds = null;
 
     Person getPerson(BusinessObject bo);
+    public void setPerson(BusinessObject person);
+    public void deletePerson(BusinessObject person);
 }
 
 class TextSingleDB implements DataAccessObject{
@@ -93,6 +95,13 @@ class TextSingleDB implements DataAccessObject{
         Gson gson = new Gson();
         Person returnVal = gson.fromJson(gson.toJson(singleDBList.get(bo.getId())), Person.class);
         return returnVal;
+    }
+    public void setPerson(BusinessObject person){
+        singleDBList.put(person.key, person);
+    }
+
+    public void deletePerson(BusinessObject person){
+        singleDBList.remove(person.key);
     }
 
     @Override

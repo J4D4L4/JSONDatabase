@@ -1,12 +1,14 @@
 package server;
 
+import com.google.gson.JsonElement;
+
 public class GoodResponse extends Response {
 
-    GoodResponse(String response, String value) {
+    GoodResponse(JsonElement response, JsonElement value) {
         super(response);
         this.value = value;
     }
 
-    String value;
+    public JsonElement value;
     //String reason;
 }

@@ -1,14 +1,16 @@
 package server;
 
+import com.google.gson.JsonElement;
+
 public class  Response {
 
 
 
-    Response(String response) {
+    Response(JsonElement response) {
         this.response = response;
     }
 
-    String response;
+    public JsonElement response;
 
 }
 
